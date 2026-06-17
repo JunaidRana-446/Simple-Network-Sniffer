@@ -63,6 +63,52 @@ def parse_ipv4_packet(data):
         "data": data[header_len:]
     }
 
+def parse_tcp_segment(data):
+    """Unpack TCP segment."""
+    (src_port, dest_port, sequence, acknowledgment, offset_reserved_flags) = struct.unpack("!HHLLH", data[:14])
+    offset = (offset_reserved_flags >> 12) * 4
+    flag_urg = (offset_reserved_flags & 32) >> 5
+    flag_ack = (offset_reserved_flags & 16) >> 4
+    flag_psh = (offset_reserved_flags & 8) >> 3
+    flag_rst = (offset_reserved_flags & 4) >> 2
+    flag_syn = (offset_reserved_flags & 2) >> 1
+    flag_fin = offset_reserved_flags & 1
+    return {
+        "source_port": src_port,
+        "destination_port": dest_port,
+        "sequence": sequence,
+        "acknowledgment": acknowledgment,
+        "flags": {
+            "URG": flag_urg,
+            "ACK": flag_ack,
+            "PSH": flag_psh,
+            "RST": flag_rst,
+            "SYN": flag_syn,
+            "FIN": flag_fin
+        },
+        "data": data[offset:]
+    }
+
+def parse_udp_segment(data):
+    """Unpack UDP segment."""
+    src_port, dest_port, size = struct.unpack("!HHH", data[:8])
+    return {
+        "source_port": src_port,
+        "destination_port": dest_port,
+        "size": size,
+        "data": data[8:]
+    }
+
+def parse_icmp_packet(data):
+    """Unpack ICMP packet."""
+    icmp_type, code, checksum = struct.unpack("!BBH", data[:4])
+    return {
+        "type": icmp_type,
+        "code": code,
+        "checksum": checksum,
+        "data": data[4:]
+    }
+
 def start_sniffer():
     """Start capturing packets."""
     system = platform.system()
